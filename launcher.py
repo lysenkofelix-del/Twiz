@@ -1,0 +1,440 @@
+import customtkinter as ctk
+import os
+import sys
+import json
+import requests
+import psutil
+import subprocess
+import threading
+from pathlib import Path
+from tkinter import messagebox
+
+# Constants
+GAME_PATH = "C:/Twix"
+CONFIG_FILE = os.path.join(GAME_PATH, "launcher_config.json")
+VERSIONS_FILE = os.path.join(GAME_PATH, "versions.json")
+
+class TwixLauncher(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+
+        # Window configuration
+        self.title("Twix Client")
+        self.geometry("900x600")
+        self.resizable(False, False)
+
+        # Set theme
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("blue")
+
+        # Initialize game path
+        self.initialize_game_directory()
+
+        # Load configuration
+        self.config = self.load_config()
+
+        # Setup UI
+        self.setup_ui()
+
+        # Load available versions
+        self.load_versions()
+
+    def initialize_game_directory(self):
+        """Create game directory if it doesn't exist"""
+        try:
+            os.makedirs(GAME_PATH, exist_ok=True)
+            print(f"Game directory initialized at: {GAME_PATH}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to create game directory: {e}")
+            sys.exit(1)
+
+    def load_config(self):
+        """Load launcher configuration"""
+        default_config = {
+            "ram_allocated": 2048,  # MB
+            "selected_version": "ALPHA 1.16.5",
+            "last_played": None,
+            "game_url": ""
+        }
+
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                return default_config
+        return default_config
+
+    def save_config(self):
+        """Save launcher configuration"""
+        try:
+            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, indent=4)
+        except Exception as e:
+            print(f"Failed to save config: {e}")
+
+    def load_versions(self):
+        """Load available game versions"""
+        default_versions = {
+            "versions": [
+                {
+                    "name": "ALPHA 1.16.5",
+                    "description": "Последняя стабильная версия",
+                    "download_url": "",
+                    "installed": False
+                },
+                {
+                    "name": "ALPHA 1.16.4",
+                    "description": "Предыдущая версия",
+                    "download_url": "",
+                    "installed": False
+                },
+                {
+                    "name": "ALPHA 1.16.3",
+                    "description": "Старая версия",
+                    "download_url": "",
+                    "installed": False
+                }
+            ]
+        }
+
+        if os.path.exists(VERSIONS_FILE):
+            try:
+                with open(VERSIONS_FILE, 'r', encoding='utf-8') as f:
+                    self.versions_data = json.load(f)
+            except:
+                self.versions_data = default_versions
+        else:
+            self.versions_data = default_versions
+            with open(VERSIONS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(default_versions, f, indent=4, ensure_ascii=False)
+
+        # Update version selector
+        version_names = [v["name"] for v in self.versions_data["versions"]]
+        if hasattr(self, 'version_selector'):
+            self.version_selector.configure(values=version_names)
+            if self.config["selected_version"] in version_names:
+                self.version_selector.set(self.config["selected_version"])
+            elif version_names:
+                self.version_selector.set(version_names[0])
+
+    def setup_ui(self):
+        """Setup the user interface"""
+
+        # Main container with gradient effect (simulated with frames)
+        self.main_frame = ctk.CTkFrame(self, fg_color="#1a1a2e")
+        self.main_frame.pack(fill="both", expand=True, padx=0, pady=0)
+
+        # Header with logo area
+        self.header_frame = ctk.CTkFrame(self.main_frame, fg_color="#16213e", height=100)
+        self.header_frame.pack(fill="x", padx=20, pady=(20, 10))
+        self.header_frame.pack_propagate(False)
+
+        # Title
+        self.title_label = ctk.CTkLabel(
+            self.header_frame,
+            text="TWIX CLIENT",
+            font=ctk.CTkFont(size=32, weight="bold"),
+            text_color="#00d4ff"
+        )
+        self.title_label.pack(pady=25)
+
+        # Content area
+        self.content_frame = ctk.CTkFrame(self.main_frame, fg_color="#1a1a2e")
+        self.content_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        # Left panel - Game info
+        self.left_panel = ctk.CTkFrame(self.content_frame, fg_color="#16213e", width=400)
+        self.left_panel.pack(side="left", fill="both", expand=True, padx=(0, 10))
+
+        # Game image placeholder (gradient effect)
+        self.game_image_frame = ctk.CTkFrame(self.left_panel, fg_color="#0f3460", height=250)
+        self.game_image_frame.pack(fill="x", padx=20, pady=20)
+        self.game_image_frame.pack_propagate(False)
+
+        # Large play button icon
+        self.play_icon_label = ctk.CTkLabel(
+            self.game_image_frame,
+            text="▶",
+            font=ctk.CTkFont(size=80),
+            text_color="#00d4ff"
+        )
+        self.play_icon_label.pack(expand=True)
+
+        # Version info
+        self.version_info_label = ctk.CTkLabel(
+            self.left_panel,
+            text="Выберите версию игры",
+            font=ctk.CTkFont(size=14),
+            text_color="#a0a0a0"
+        )
+        self.version_info_label.pack(pady=(0, 10))
+
+        # Right panel - Settings and controls
+        self.right_panel = ctk.CTkFrame(self.content_frame, fg_color="#16213e", width=400)
+        self.right_panel.pack(side="right", fill="both", expand=True)
+
+        # Version selector
+        self.version_label = ctk.CTkLabel(
+            self.right_panel,
+            text="Версия игры:",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color="#ffffff"
+        )
+        self.version_label.pack(pady=(20, 5), padx=20, anchor="w")
+
+        self.version_selector = ctk.CTkComboBox(
+            self.right_panel,
+            values=["ALPHA 1.16.5"],
+            command=self.on_version_change,
+            width=360,
+            height=40,
+            font=ctk.CTkFont(size=14),
+            dropdown_font=ctk.CTkFont(size=12)
+        )
+        self.version_selector.pack(pady=(0, 20), padx=20)
+        self.version_selector.set(self.config["selected_version"])
+
+        # RAM allocation
+        self.ram_label = ctk.CTkLabel(
+            self.right_panel,
+            text=f"Выделенная RAM: {self.config['ram_allocated']} MB",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color="#ffffff"
+        )
+        self.ram_label.pack(pady=(10, 5), padx=20, anchor="w")
+
+        # Get system RAM
+        total_ram = psutil.virtual_memory().total // (1024 * 1024)  # Convert to MB
+
+        self.ram_slider = ctk.CTkSlider(
+            self.right_panel,
+            from_=1024,
+            to=min(total_ram, 16384),
+            command=self.on_ram_change,
+            width=360,
+            height=20
+        )
+        self.ram_slider.pack(pady=(0, 10), padx=20)
+        self.ram_slider.set(self.config["ram_allocated"])
+
+        # RAM info
+        self.ram_info_label = ctk.CTkLabel(
+            self.right_panel,
+            text=f"Доступно RAM: {total_ram} MB | Рекомендуется: 4096 MB",
+            font=ctk.CTkFont(size=12),
+            text_color="#a0a0a0"
+        )
+        self.ram_info_label.pack(pady=(0, 20), padx=20)
+
+        # Game path info
+        self.path_label = ctk.CTkLabel(
+            self.right_panel,
+            text=f"Путь установки:\n{GAME_PATH}",
+            font=ctk.CTkFont(size=12),
+            text_color="#a0a0a0",
+            justify="left"
+        )
+        self.path_label.pack(pady=(10, 20), padx=20, anchor="w")
+
+        # Status label
+        self.status_label = ctk.CTkLabel(
+            self.right_panel,
+            text="Готов к запуску",
+            font=ctk.CTkFont(size=14),
+            text_color="#00ff00"
+        )
+        self.status_label.pack(pady=(10, 20), padx=20)
+
+        # Progress bar
+        self.progress_bar = ctk.CTkProgressBar(self.right_panel, width=360)
+        self.progress_bar.pack(pady=(0, 20), padx=20)
+        self.progress_bar.set(0)
+        self.progress_bar.pack_forget()  # Hide initially
+
+        # Launch button
+        self.launch_button = ctk.CTkButton(
+            self.right_panel,
+            text="ЗАПУСТИТЬ",
+            command=self.launch_game,
+            width=360,
+            height=50,
+            font=ctk.CTkFont(size=18, weight="bold"),
+            fg_color="#00d4ff",
+            hover_color="#0099cc",
+            text_color="#000000"
+        )
+        self.launch_button.pack(pady=(0, 20), padx=20)
+
+        # Download button
+        self.download_button = ctk.CTkButton(
+            self.right_panel,
+            text="СКАЧАТЬ ИГРУ",
+            command=self.download_game,
+            width=360,
+            height=40,
+            font=ctk.CTkFont(size=14),
+            fg_color="#4CAF50",
+            hover_color="#45a049"
+        )
+        self.download_button.pack(pady=(0, 10), padx=20)
+
+        # Footer
+        self.footer_frame = ctk.CTkFrame(self.main_frame, fg_color="#16213e", height=50)
+        self.footer_frame.pack(fill="x", padx=20, pady=(10, 20))
+        self.footer_frame.pack_propagate(False)
+
+        self.footer_label = ctk.CTkLabel(
+            self.footer_frame,
+            text="Twix Client v1.0.0 | t.me/TwixClient",
+            font=ctk.CTkFont(size=12),
+            text_color="#666666"
+        )
+        self.footer_label.pack(pady=15)
+
+    def on_version_change(self, choice):
+        """Handle version selection change"""
+        self.config["selected_version"] = choice
+        self.save_config()
+        self.status_label.configure(text=f"Выбрана версия: {choice}", text_color="#00d4ff")
+
+        # Check if version is installed
+        version_path = os.path.join(GAME_PATH, choice)
+        if os.path.exists(version_path):
+            self.launch_button.configure(state="normal")
+        else:
+            self.status_label.configure(text=f"Версия не установлена", text_color="#ff9800")
+
+    def on_ram_change(self, value):
+        """Handle RAM slider change"""
+        ram_value = int(value)
+        self.config["ram_allocated"] = ram_value
+        self.ram_label.configure(text=f"Выделенная RAM: {ram_value} MB")
+        self.save_config()
+
+    def download_game(self):
+        """Download game files"""
+        selected_version = self.version_selector.get()
+
+        # Find version data
+        version_data = None
+        for v in self.versions_data["versions"]:
+            if v["name"] == selected_version:
+                version_data = v
+                break
+
+        if not version_data:
+            messagebox.showerror("Ошибка", "Версия не найдена")
+            return
+
+        if not version_data["download_url"]:
+            messagebox.showinfo(
+                "Информация",
+                "URL для скачивания не настроен.\n\n"
+                "Чтобы добавить ссылку на игру:\n"
+                f"1. Откройте файл: {VERSIONS_FILE}\n"
+                "2. Добавьте 'download_url' для нужной версии\n"
+                "3. Перезапустите лаунчер"
+            )
+            return
+
+        # Start download in separate thread
+        self.launch_button.configure(state="disabled")
+        self.download_button.configure(state="disabled")
+        self.progress_bar.pack(pady=(0, 20), padx=20)
+        self.progress_bar.set(0)
+
+        thread = threading.Thread(target=self._download_thread, args=(version_data,))
+        thread.daemon = True
+        thread.start()
+
+    def _download_thread(self, version_data):
+        """Download game in background thread"""
+        try:
+            self.status_label.configure(text="Скачивание...", text_color="#00d4ff")
+
+            version_path = os.path.join(GAME_PATH, version_data["name"])
+            os.makedirs(version_path, exist_ok=True)
+
+            # Download file
+            response = requests.get(version_data["download_url"], stream=True)
+            total_size = int(response.headers.get('content-length', 0))
+
+            downloaded = 0
+            chunk_size = 8192
+
+            output_file = os.path.join(version_path, "game.zip")
+
+            with open(output_file, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=chunk_size):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total_size > 0:
+                            progress = downloaded / total_size
+                            self.progress_bar.set(progress)
+
+            self.status_label.configure(text="Скачивание завершено!", text_color="#00ff00")
+            self.launch_button.configure(state="normal")
+            messagebox.showinfo("Успех", f"Версия {version_data['name']} успешно скачана!")
+
+        except Exception as e:
+            self.status_label.configure(text=f"Ошибка: {str(e)}", text_color="#ff0000")
+            messagebox.showerror("Ошибка", f"Не удалось скачать игру:\n{e}")
+
+        finally:
+            self.download_button.configure(state="normal")
+            self.progress_bar.pack_forget()
+
+    def launch_game(self):
+        """Launch the game"""
+        selected_version = self.version_selector.get()
+        version_path = os.path.join(GAME_PATH, selected_version)
+
+        # Look for executable
+        exe_file = None
+        if os.path.exists(version_path):
+            for file in os.listdir(version_path):
+                if file.endswith('.exe'):
+                    exe_file = os.path.join(version_path, file)
+                    break
+
+        if not exe_file or not os.path.exists(exe_file):
+            messagebox.showwarning(
+                "Игра не найдена",
+                f"Исполняемый файл игры не найден в:\n{version_path}\n\n"
+                "Пожалуйста, скачайте игру сначала."
+            )
+            return
+
+        try:
+            # Launch game with allocated RAM
+            self.status_label.configure(text="Запуск игры...", text_color="#00d4ff")
+
+            # For Java games, you might use:
+            # subprocess.Popen([exe_file, f"-Xmx{self.config['ram_allocated']}M"])
+
+            subprocess.Popen([exe_file])
+
+            self.config["last_played"] = selected_version
+            self.save_config()
+
+            self.status_label.configure(text="Игра запущена!", text_color="#00ff00")
+
+        except Exception as e:
+            self.status_label.configure(text="Ошибка запуска", text_color="#ff0000")
+            messagebox.showerror("Ошибка", f"Не удалось запустить игру:\n{e}")
+
+    def on_closing(self):
+        """Handle window closing"""
+        self.save_config()
+        self.destroy()
+
+def main():
+    """Main entry point"""
+    app = TwixLauncher()
+    app.protocol("WM_DELETE_WINDOW", app.on_closing)
+    app.mainloop()
+
+if __name__ == "__main__":
+    main()

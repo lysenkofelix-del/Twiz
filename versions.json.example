@@ -1,0 +1,22 @@
+{
+  "versions": [
+    {
+      "name": "ALPHA 1.16.5",
+      "description": "Последняя стабильная версия",
+      "download_url": "",
+      "installed": false
+    },
+    {
+      "name": "ALPHA 1.16.4",
+      "description": "Предыдущая версия",
+      "download_url": "",
+      "installed": false
+    },
+    {
+      "name": "ALPHA 1.16.3",
+      "description": "Старая версия",
+      "download_url": "",
+      "installed": false
+    }
+  ]
+}
