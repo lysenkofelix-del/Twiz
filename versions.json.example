@@ -1,18 +1,10 @@
 {
   "versions": [
     {
-      "name": "Twix Game v1.0",
-      "description": "Основная версия игры Twix",
+      "name": "TwixClient v1.0.0",
+      "description": "Официальная версия TwixClient",
       "download_url": "https://drive.google.com/file/d/1RF78ZZk6O0xGZ_LUx_LJ3OXaCxvjHMIR/view?usp=sharing",
-      "installed": false,
-      "comment": "Лаунчер автоматически конвертирует любую ссылку Google Drive в прямую ссылку для скачивания"
-    },
-    {
-      "name": "ALPHA 1.16.4 (Пример)",
-      "description": "Пример дополнительной версии",
-      "download_url": "",
-      "installed": false,
-      "comment": "Замените download_url на свою ссылку"
+      "installed": false
     }
   ]
 }
