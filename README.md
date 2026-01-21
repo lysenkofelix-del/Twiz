@@ -1,328 +1,427 @@
-# Twix Launcher
+# 🎮 Twix Launcher
 
-Modern game launcher with RAM allocation settings, version management, and automatic download functionality.
+<div align="center">
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Python](https://img.shields.io/badge/python-3.8+-green)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
+![Java](https://img.shields.io/badge/Java-8+-orange)
 ![Tests](https://img.shields.io/badge/tests-28%20passed-success)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Features
+**Современный лаунчер для игр с автоматической установкой и обновлением**
 
-- **Modern UI**: Sleek, dark-themed interface with gradient effects
-- **RAM Allocation**: Adjustable RAM settings for optimal game performance
-- **Version Management**: Support for multiple game versions
-- **Automatic Downloads**: Built-in game download functionality
-- **Fixed Installation Path**: Games saved to `C:/Twix` (configurable in code)
-- **Persistent Settings**: Configuration saved between sessions
-- **Comprehensive Testing**: 28 unit tests covering all functionality
+[📥 Скачать](#-скачать) • [📖 Документация](#-документация) • [🛠️ Разработка](#-для-разработчиков) • [💬 Поддержка](#-поддержка)
 
-## Screenshots
-
-The launcher features a modern interface similar to popular game launchers, with:
-- Version selector dropdown
-- RAM allocation slider
-- Play button with visual feedback
-- Download progress tracking
-- Status messages
-
-## Requirements
-
-- Python 3.8 or higher
-- Windows OS (for building .exe)
-- Dependencies listed in `requirements.txt`
-
-## Installation
-
-### For Users (Pre-built Executable)
-
-1. Download `TwixLauncher.exe` from the releases page
-2. Run the executable
-3. The launcher will automatically create `C:/Twix` directory
-4. Configure your game versions in `C:/Twix/versions.json`
-
-### For Developers
-
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/yourusername/Twiz.git
-   cd Twiz
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run the launcher:
-   ```bash
-   python launcher.py
-   ```
-
-## Building the Executable
-
-### Windows
-
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Run the build script:
-   ```bash
-   python build_exe.py
-   ```
-   Or use the batch file:
-   ```bash
-   build.bat
-   ```
-
-3. The executable will be created in the `dist` folder as `TwixLauncher.exe`
-
-## Configuration
-
-### Game Versions
-
-Edit `C:/Twix/versions.json` to add your game versions:
-
-```json
-{
-  "versions": [
-    {
-      "name": "ALPHA 1.16.5",
-      "description": "Latest stable version",
-      "download_url": "https://yourserver.com/game.zip",
-      "installed": false
-    }
-  ]
-}
-```
-
-### Launcher Settings
-
-The launcher stores settings in `C:/Twix/launcher_config.json`:
-
-```json
-{
-  "ram_allocated": 2048,
-  "selected_version": "ALPHA 1.16.5",
-  "last_played": null,
-  "game_url": ""
-}
-```
-
-## Usage
-
-1. **Launch the application**
-   - Run `TwixLauncher.exe` or `python launcher.py`
-
-2. **Select a version**
-   - Choose your desired game version from the dropdown
-
-3. **Adjust RAM**
-   - Use the slider to allocate RAM (1024 MB - 16384 MB)
-
-4. **Download the game**
-   - Click "СКАЧАТЬ ИГРУ" to download the selected version
-   - Progress will be shown in the progress bar
-
-5. **Launch the game**
-   - Click "ЗАПУСТИТЬ" to start the game
-
-## Testing
-
-The project includes comprehensive unit tests covering all functionality.
-
-### Run all tests:
-
-```bash
-python test_launcher_functions.py
-```
-
-### Test Coverage:
-
-- **Configuration Management** (5 tests)
-  - Default configuration loading
-  - Save and load operations
-  - Corrupted file handling
-  - Value validation
-  - Configuration updates
-
-- **Version Management** (5 tests)
-  - Version data structure
-  - Save and load operations
-  - Version lookup
-  - Version list extraction
-
-- **Directory Operations** (5 tests)
-  - Directory creation
-  - Nested directories
-  - Executable detection
-  - Path validation
-
-- **RAM Calculations** (4 tests)
-  - Value conversion
-  - Min/max bounds
-  - Display formatting
-
-- **Download Validation** (3 tests)
-  - URL validation
-  - Empty URL handling
-
-- **Path Operations** (2 tests)
-  - Path construction
-  - Path normalization
-
-- **Status Messages** (2 tests)
-  - Message formatting
-  - Error messages
-
-- **Integration Tests** (2 tests)
-  - Complete workflows
-  - End-to-end scenarios
-
-**Total: 28 tests - 100% pass rate**
-
-## Project Structure
-
-```
-Twiz/
-├── launcher.py              # Main launcher application
-├── test_launcher.py         # Original test suite
-├── test_launcher_functions.py  # Comprehensive unit tests
-├── build_exe.py             # Build script for creating .exe
-├── build.bat                # Windows batch build script
-├── requirements.txt         # Python dependencies
-├── README.md                # This file
-└── C:/Twix/                 # Game installation directory (created at runtime)
-    ├── launcher_config.json # Launcher configuration
-    ├── versions.json        # Game versions data
-    └── [version folders]/   # Downloaded game versions
-```
-
-## Customization
-
-### Change Installation Path
-
-Edit the `GAME_PATH` constant in `launcher.py`:
-
-```python
-GAME_PATH = "C:/YourCustomPath"
-```
-
-### Add Custom Icon
-
-1. Create or obtain an `.ico` file
-2. Save it as `icon.ico` in the project root
-3. Uncomment the icon line in `build_exe.py`:
-   ```python
-   "--icon=icon.ico",
-   ```
-
-### Modify UI Theme
-
-The launcher uses CustomTkinter. Modify colors in `launcher.py`:
-
-```python
-# Background colors
-fg_color="#1a1a2e"   # Dark blue-grey
-fg_color="#16213e"   # Lighter blue-grey
-
-# Accent color
-text_color="#00d4ff"  # Cyan
-```
-
-## Technical Details
-
-### Dependencies
-
-- **customtkinter**: Modern UI framework
-- **requests**: HTTP library for downloads
-- **psutil**: System information (RAM detection)
-- **pillow**: Image processing
-- **pyinstaller**: Executable creation
-
-### Architecture
-
-- **MVC Pattern**: Separation of UI and logic
-- **Thread-based Downloads**: Non-blocking download operations
-- **JSON Configuration**: Human-readable settings
-- **Error Handling**: Comprehensive exception management
-
-## Troubleshooting
-
-### Launcher won't start
-- Ensure Python 3.8+ is installed
-- Check that all dependencies are installed: `pip install -r requirements.txt`
-- Run from command line to see error messages
-
-### Download fails
-- Verify the download URL in `versions.json`
-- Check internet connection
-- Ensure write permissions to `C:/Twix`
-
-### Game won't launch
-- Verify game executable exists in version folder
-- Check that .exe file has correct permissions
-- Review launcher logs for error messages
-
-### Build fails
-- Update PyInstaller: `pip install --upgrade pyinstaller`
-- Clear build cache: Delete `build` and `dist` folders
-- Check Python version compatibility
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests to ensure they pass
-5. Submit a pull request
-
-## Testing Contributions
-
-All code contributions must include tests. Run the test suite before submitting:
-
-```bash
-python test_launcher_functions.py
-```
-
-## License
-
-This project is provided as-is for educational and personal use.
-
-## Contact
-
-- **Telegram**: [t.me/TwixClient](https://t.me/TwixClient)
-- **Issues**: Report bugs on GitHub Issues
-
-## Changelog
-
-### Version 1.0.0 (2026-01-21)
-
-- Initial release
-- Modern UI with dark theme
-- RAM allocation settings
-- Version management system
-- Download functionality
-- Game launch system
-- Comprehensive test suite (28 tests)
-- Windows executable build support
-
-## Roadmap
-
-Future improvements planned:
-
-- [ ] Custom icon integration
-- [ ] Multi-language support
-- [ ] Update checker
-- [ ] Mod management
-- [ ] Server status indicator
-- [ ] Screenshot/video capture
-- [ ] Performance monitoring
-- [ ] Cloud save sync
+</div>
 
 ---
 
-Made with ❤️ for the Twix community
+## ✨ Возможности
+
+### Для игроков:
+- 🎯 **Один клик для установки** - скачивание и установка автоматически
+- 🔄 **Управление версиями** - легко переключайтесь между версиями игры
+- ⚙️ **Настройка RAM** - регулируйте выделенную память (1-16 ГБ)
+- 🎨 **Современный UI** - тёмная тема с красивым интерфейсом
+- 💾 **Автосохранение настроек** - всё сохраняется автоматически
+
+### Для разработчиков:
+- 🤖 **GitHub Actions** - автоматическая сборка .exe
+- 📦 **Поддержка JAR и EXE** - универсальный запуск
+- 🔍 **Проверка Java** - автоматическая проверка наличия
+- 🧪 **28 unit-тестов** - 100% success rate
+- 📚 **Полная документация** - на русском языке
+
+---
+
+## 📥 Скачать
+
+### Для игроков:
+
+**[⬇️ Скачать последнюю версию](../../releases/latest)**
+
+Просто скачайте `TwixLauncher-vX.X.X.zip`, распакуйте и запустите!
+
+### Системные требования:
+- Windows 7/8/10/11
+- Java 8+ (для JAR игр) - [Скачать Java](https://www.java.com/download)
+- 2 ГБ RAM (рекомендуется 4 ГБ)
+- Интернет для скачивания игры
+
+---
+
+## 🚀 Быстрый старт
+
+### Для игроков:
+
+```
+1. Скачайте TwixLauncher.exe
+2. Запустите
+3. Нажмите "УСТАНОВИТЬ" ⬇️
+4. Нажмите "ЗАПУСТИТЬ" ▶️
+5. Играйте! 🎮
+```
+
+[📖 Подробная инструкция для игроков](ИНСТРУКЦИЯ_ДЛЯ_ИГРОКОВ.md)
+
+### Для разработчиков:
+
+```bash
+# Клонировать репозиторий
+git clone https://github.com/yourusername/TwixLauncher.git
+cd TwixLauncher
+
+# Установить зависимости
+pip install -r requirements.txt
+
+# Запустить лаунчер
+python launcher.py
+
+# Собрать .exe
+python build_exe.py
+```
+
+[📖 Полная инструкция по настройке](ПОЛНАЯ_ИНСТРУКЦИЯ.md)
+
+---
+
+## 📖 Документация
+
+### Для пользователей:
+- 📘 [**Инструкция для игроков**](ИНСТРУКЦИЯ_ДЛЯ_ИГРОКОВ.md) - как скачать, установить и играть
+- 🇷🇺 [**README на русском**](README_RU.md) - полное описание проекта
+- ⚡ [**Быстрый старт**](QUICK_START_RU.md) - кратко о главном
+
+### Для разработчиков:
+- 🔧 [**Полная инструкция**](ПОЛНАЯ_ИНСТРУКЦИЯ.md) - пошаговая настройка всего
+- 🌐 [**Гайд по хостингу**](HOSTING_GUIDE.md) - где разместить игру
+- 🤖 [**Автоматизация**](ДАЙ_МНЕ_ДАННЫЕ.md) - дайте данные, я всё настрою
+
+### Для продвинутых:
+- 📄 [**Английская документация**](README_EN.md) - full English guide
+- 🧪 [**Тесты**](test_launcher_functions.py) - 28 unit tests
+- ⚙️ [**Setup Guide**](SETUP.md) - advanced configuration
+
+---
+
+## 🎬 Как это работает
+
+### Процесс установки:
+
+```mermaid
+graph LR
+    A[Пользователь] -->|Нажимает УСТАНОВИТЬ| B[Скачивание ZIP]
+    B -->|70% прогресса| C[Распаковка]
+    C -->|90% прогресса| D[Удаление ZIP]
+    D -->|100%| E[ГОТОВО!]
+    E -->|Кнопка меняется| F[ЗАПУСТИТЬ]
+```
+
+### Процесс запуска JAR:
+
+```mermaid
+graph TD
+    A[ЗАПУСТИТЬ] --> B{Java установлена?}
+    B -->|Нет| C[Показать ошибку + ссылку]
+    B -->|Да| D[java -Xmx RAM -jar game.jar]
+    D --> E[Игра запущена! 🎮]
+```
+
+---
+
+## 🛠️ Для разработчиков
+
+### Структура проекта:
+
+```
+TwixLauncher/
+├── .github/
+│   └── workflows/
+│       └── build-launcher.yml    # GitHub Actions (автосборка)
+├── launcher.py                   # Основное приложение
+├── test_launcher_functions.py    # Тесты (28 passed ✅)
+├── build_exe.py                  # Скрипт сборки .exe
+├── requirements.txt              # Зависимости Python
+├── versions.json.example         # Пример конфига версий
+├── README.md                     # Этот файл
+├── README_RU.md                  # Русская документация
+├── ПОЛНАЯ_ИНСТРУКЦИЯ.md          # Пошаговый гайд
+├── QUICK_START_RU.md             # Быстрый старт
+├── HOSTING_GUIDE.md              # Гайд по хостингу
+└── ИНСТРУКЦИЯ_ДЛЯ_ИГРОКОВ.md     # Для конечных пользователей
+```
+
+### Технологии:
+
+- **Python 3.8+** - основной язык
+- **CustomTkinter** - современный GUI
+- **PyInstaller** - сборка .exe
+- **GitHub Actions** - CI/CD
+- **unittest** - тестирование
+
+### Фичи кода:
+
+```python
+# ✅ Поддержка Google Drive (автоконвертация ссылок)
+download_url = convert_google_drive_url(url)
+
+# ✅ Автоматическая распаковка ZIP
+extract_zip(zip_path, version_path)
+
+# ✅ Запуск JAR с выделенной RAM
+subprocess.Popen(['java', f'-Xmx{ram}M', '-jar', jar_file])
+
+# ✅ Динамическая кнопка УСТАНОВИТЬ/ЗАПУСТИТЬ
+if check_if_installed(version):
+    button.configure(text="ЗАПУСТИТЬ")
+else:
+    button.configure(text="УСТАНОВИТЬ")
+```
+
+---
+
+## 🧪 Тестирование
+
+Проект включает **28 comprehensive unit tests**:
+
+```bash
+python test_launcher_functions.py
+```
+
+**Результат:**
+```
+======================================================================
+TEST EXECUTION SUMMARY
+======================================================================
+Total Tests Run:     28
+Successful:          28
+Failures:            0
+Errors:              0
+Success Rate:        100.0%
+======================================================================
+
+✓ All tests passed successfully!
+```
+
+**Покрытие:**
+- ✅ Configuration management (5 тестов)
+- ✅ Version management (5 тестов)
+- ✅ Directory operations (5 тестов)
+- ✅ RAM calculations (4 теста)
+- ✅ Download validation (3 теста)
+- ✅ Path operations (2 теста)
+- ✅ Status messages (2 теста)
+- ✅ Integration workflows (2 теста)
+
+---
+
+## 🤖 GitHub Actions (Автоматическая сборка)
+
+При создании Release автоматически:
+
+1. ✅ Устанавливаются зависимости
+2. ✅ Собирается TwixLauncher.exe
+3. ✅ Создаётся ZIP с документацией
+4. ✅ Прикрепляется к Release
+5. ✅ Готово к скачиванию!
+
+**Просто создайте тег:**
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions сделает всё остальное! 🚀
+
+---
+
+## 📦 Установка и сборка
+
+### Установка зависимостей:
+
+```bash
+pip install -r requirements.txt
+```
+
+**Зависимости:**
+- `customtkinter==5.2.1` - современный GUI
+- `requests==2.31.0` - HTTP запросы
+- `psutil==5.9.6` - информация о системе
+- `pillow==10.1.0` - обработка изображений
+- `pyinstaller==6.3.0` - сборка .exe
+
+### Сборка .exe:
+
+**Способ 1: Автоматический (Windows)**
+```bash
+build.bat
+```
+
+**Способ 2: Python скрипт**
+```bash
+python build_exe.py
+```
+
+**Способ 3: Напрямую PyInstaller**
+```bash
+pyinstaller --name=TwixLauncher --onefile --windowed launcher.py
+```
+
+Готовый файл: `dist/TwixLauncher.exe`
+
+---
+
+## 🎨 Кастомизация
+
+### Изменить цвета:
+
+```python
+# launcher.py
+fg_color="#1a1a2e"      # Фон (тёмно-синий)
+fg_color="#16213e"      # Панели (синий)
+text_color="#00d4ff"    # Акцент (голубой)
+```
+
+**Готовые темы:**
+- 🔵 Синяя (по умолчанию): `#1a1a2e`, `#00d4ff`
+- 🟣 Фиолетовая: `#2d1b3d`, `#c74fdb`
+- 🟢 Зелёная: `#1a3a1f`, `#4fff4f`
+- 🔴 Красная: `#3a1f1f`, `#ff4f4f`
+
+### Добавить иконку:
+
+1. Создайте `icon.ico` (256x256)
+2. В `build_exe.py` раскомментируйте:
+   ```python
+   "--icon=icon.ico",
+   ```
+3. Пересоберите
+
+### Изменить путь установки:
+
+```python
+# launcher.py
+GAME_PATH = "C:/Twix"  # Измените на свой путь
+```
+
+---
+
+## 🌐 Поддержка хостингов
+
+Лаунчер поддерживает скачивание с:
+
+- ✅ **GitHub Releases** (рекомендуется)
+- ✅ **Google Drive** (автоконвертация ссылок)
+- ✅ **Mega.nz**
+- ✅ **Dropbox**
+- ✅ **Прямые HTTP/HTTPS ссылки**
+- ✅ **Свой сервер**
+
+[📖 Полный гайд по хостингу](HOSTING_GUIDE.md)
+
+---
+
+## 💬 Поддержка
+
+### Нужна помощь?
+
+- 💬 **Telegram:** [t.me/TwixClient](https://t.me/TwixClient)
+- 🐛 **GitHub Issues:** [Создать Issue](../../issues)
+- 📧 **Email:** support@example.com
+- 💭 **Discord:** [Ссылка на Discord сервер]
+
+### Хотите помочь проекту?
+
+- ⭐ Поставьте звезду на GitHub
+- 🐛 Сообщайте о багах
+- 💡 Предлагайте идеи
+- 🔀 Создавайте Pull Request
+- 📢 Расскажите друзьям
+
+---
+
+## 🗺️ Roadmap
+
+### Версия 1.1 (планируется):
+- [ ] Поддержка RAR архивов
+- [ ] Многоязычность (EN/RU/ES)
+- [ ] Проверка обновлений лаунчера
+- [ ] Встроенная иконка и логотип
+
+### Версия 1.2:
+- [ ] Система модов
+- [ ] Индикатор онлайн серверов
+- [ ] Встроенный чат
+- [ ] Скриншоты/видео запись
+
+### Версия 2.0:
+- [ ] Облачные сохранения
+- [ ] Достижения
+- [ ] Статистика игрового времени
+- [ ] Мультиплеер лобби
+
+---
+
+## 📊 Статистика
+
+![GitHub stars](https://img.shields.io/github/stars/yourusername/TwixLauncher?style=social)
+![GitHub forks](https://img.shields.io/github/forks/yourusername/TwixLauncher?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/yourusername/TwixLauncher?style=social)
+
+---
+
+## 📜 Лицензия
+
+Этот проект распространяется под лицензией MIT - см. файл [LICENSE](LICENSE) для деталей.
+
+```
+MIT License - Вы можете:
+✅ Использовать в коммерческих целях
+✅ Модифицировать
+✅ Распространять
+✅ Использовать в приватных проектах
+```
+
+---
+
+## 🙏 Благодарности
+
+- [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) - за отличный GUI фреймворк
+- [PyInstaller](https://www.pyinstaller.org/) - за удобную сборку .exe
+- Сообществу Python - за поддержку
+- Всем тестерам и контрибьюторам!
+
+---
+
+## 📝 Changelog
+
+### v1.0.0 (2026-01-21)
+
+**Первый релиз! 🎉**
+
+**Добавлено:**
+- ✨ Динамическая кнопка УСТАНОВИТЬ/ЗАПУСТИТЬ
+- ✨ Поддержка JAR файлов (Java игры)
+- ✨ Автоматическая распаковка ZIP
+- ✨ Поддержка Google Drive ссылок
+- ✨ Настройка RAM (1-16 ГБ)
+- ✨ Управление версиями
+- ✨ GitHub Actions для автосборки
+- ✨ 28 unit-тестов
+- ✨ Полная документация на русском
+
+**Технические:**
+- Python 3.8+
+- CustomTkinter 5.2.1
+- Windows 7/8/10/11
+- Поддержка JAR и EXE
+
+---
+
+<div align="center">
+
+**Сделано с ❤️ для сообщества Twix**
+
+[⬆ Наверх](#-twix-launcher)
+
+</div>

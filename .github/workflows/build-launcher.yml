@@ -1,0 +1,90 @@
+name: Build Twix Launcher
+
+on:
+  push:
+    tags:
+      - 'v*'  # Запуск при создании тега версии (v1.0.0, v1.0.1 и т.д.)
+  workflow_dispatch:  # Возможность запустить вручную
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable
+      run: |
+        python build_exe.py
+
+    - name: Get version
+      id: get_version
+      shell: bash
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION="dev-$(git rev-parse --short HEAD)"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+
+    - name: Create Release Archive
+      shell: bash
+      run: |
+        mkdir -p release
+        cp dist/TwixLauncher.exe release/
+        cp README_RU.md release/ИНСТРУКЦИЯ.txt
+        cp versions.json.example release/versions.json.example
+        cd release
+        7z a -tzip TwixLauncher-${{ steps.get_version.outputs.VERSION }}.zip *
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: TwixLauncher-${{ steps.get_version.outputs.VERSION }}
+        path: release/TwixLauncher-*.zip
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release/TwixLauncher-*.zip
+        body: |
+          ## Twix Launcher ${{ steps.get_version.outputs.VERSION }}
+
+          ### 🎮 Скачать
+
+          Скачайте `TwixLauncher-${{ steps.get_version.outputs.VERSION }}.zip` ниже
+
+          ### 📦 Установка
+
+          1. Распакуйте архив
+          2. Запустите `TwixLauncher.exe`
+          3. Нажмите "УСТАНОВИТЬ" для загрузки игры
+          4. Нажмите "ЗАПУСТИТЬ" для запуска игры
+
+          ### ⚙️ Требования
+
+          - Windows 7/8/10/11
+          - Java (для JAR игр) - [Скачать](https://www.java.com/download)
+
+          ### 📚 Документация
+
+          Смотрите `ИНСТРУКЦИЯ.txt` в архиве для подробной информации
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
