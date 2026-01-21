@@ -296,11 +296,11 @@ class TwixLauncher(ctk.CTk):
         self.progress_bar.set(0)
         self.progress_bar.pack_forget()  # Hide initially
 
-        # Launch button
-        self.launch_button = ctk.CTkButton(
+        # Main action button (динамическая кнопка УСТАНОВИТЬ/ЗАПУСТИТЬ)
+        self.main_action_button = ctk.CTkButton(
             self.right_panel,
-            text="ЗАПУСТИТЬ",
-            command=self.launch_game,
+            text="УСТАНОВИТЬ",
+            command=self.handle_main_action,
             width=360,
             height=50,
             font=ctk.CTkFont(size=18, weight="bold"),
@@ -308,20 +308,7 @@ class TwixLauncher(ctk.CTk):
             hover_color="#0099cc",
             text_color="#000000"
         )
-        self.launch_button.pack(pady=(0, 20), padx=20)
-
-        # Download button
-        self.download_button = ctk.CTkButton(
-            self.right_panel,
-            text="СКАЧАТЬ ИГРУ",
-            command=self.download_game,
-            width=360,
-            height=40,
-            font=ctk.CTkFont(size=14),
-            fg_color="#4CAF50",
-            hover_color="#45a049"
-        )
-        self.download_button.pack(pady=(0, 10), padx=20)
+        self.main_action_button.pack(pady=(0, 20), padx=20)
 
         # Footer
         self.footer_frame = ctk.CTkFrame(self.main_frame, fg_color="#16213e", height=50)
@@ -336,18 +323,58 @@ class TwixLauncher(ctk.CTk):
         )
         self.footer_label.pack(pady=15)
 
+        # Обновляем состояние кнопки при запуске
+        self.update_main_button()
+
+    def check_if_installed(self, version_name):
+        """Проверяет, установлена ли игра"""
+        version_path = os.path.join(GAME_PATH, version_name)
+        if not os.path.exists(version_path):
+            return False
+
+        # Ищем исполняемый файл (JAR или EXE)
+        for file in os.listdir(version_path):
+            if file.endswith(('.jar', '.exe')):
+                return True
+        return False
+
+    def update_main_button(self):
+        """Обновляет текст и функцию главной кнопки в зависимости от статуса установки"""
+        selected_version = self.version_selector.get()
+
+        if self.check_if_installed(selected_version):
+            # Игра установлена - показываем ЗАПУСТИТЬ
+            self.main_action_button.configure(
+                text="ЗАПУСТИТЬ",
+                fg_color="#00d4ff",
+                hover_color="#0099cc"
+            )
+            self.status_label.configure(text="Готов к запуску", text_color="#00ff00")
+        else:
+            # Игра не установлена - показываем УСТАНОВИТЬ
+            self.main_action_button.configure(
+                text="УСТАНОВИТЬ",
+                fg_color="#4CAF50",
+                hover_color="#45a049"
+            )
+            self.status_label.configure(text="Нажмите 'УСТАНОВИТЬ' для загрузки", text_color="#ff9800")
+
+    def handle_main_action(self):
+        """Обрабатывает нажатие на главную кнопку (установить или запустить)"""
+        selected_version = self.version_selector.get()
+
+        if self.check_if_installed(selected_version):
+            # Игра установлена - запускаем
+            self.launch_game()
+        else:
+            # Игра не установлена - скачиваем
+            self.download_game()
+
     def on_version_change(self, choice):
         """Handle version selection change"""
         self.config["selected_version"] = choice
         self.save_config()
-        self.status_label.configure(text=f"Выбрана версия: {choice}", text_color="#00d4ff")
-
-        # Check if version is installed
-        version_path = os.path.join(GAME_PATH, choice)
-        if os.path.exists(version_path):
-            self.launch_button.configure(state="normal")
-        else:
-            self.status_label.configure(text=f"Версия не установлена", text_color="#ff9800")
+        self.update_main_button()
 
     def on_ram_change(self, value):
         """Handle RAM slider change"""
@@ -383,8 +410,7 @@ class TwixLauncher(ctk.CTk):
             return
 
         # Start download in separate thread
-        self.launch_button.configure(state="disabled")
-        self.download_button.configure(state="disabled")
+        self.main_action_button.configure(state="disabled")
         self.progress_bar.pack(pady=(0, 20), padx=20)
         self.progress_bar.set(0)
 
@@ -442,7 +468,6 @@ class TwixLauncher(ctk.CTk):
 
                 self.progress_bar.set(1.0)
                 self.status_label.configure(text="Установка завершена!", text_color="#00ff00")
-                self.launch_button.configure(state="normal")
 
                 # Обновляем статус установки в versions.json
                 for v in self.versions_data["versions"]:
@@ -457,7 +482,11 @@ class TwixLauncher(ctk.CTk):
                 except:
                     pass
 
-                messagebox.showinfo("Успех", f"Игра {version_data['name']} успешно установлена!\n\nМожете нажать 'ЗАПУСТИТЬ'")
+                # Обновляем кнопку на ЗАПУСТИТЬ
+                self.update_main_button()
+                self.main_action_button.configure(state="normal")
+
+                messagebox.showinfo("Успех", f"Игра {version_data['name']} успешно установлена!\n\nНажмите 'ЗАПУСТИТЬ' чтобы играть")
             else:
                 raise Exception("Не удалось распаковать архив")
 
@@ -477,47 +506,92 @@ class TwixLauncher(ctk.CTk):
                     pass
 
         finally:
-            self.download_button.configure(state="normal")
+            self.main_action_button.configure(state="normal")
             self.progress_bar.pack_forget()
 
+    def check_java_installed(self):
+        """Проверяет, установлена ли Java"""
+        try:
+            result = subprocess.run(['java', '-version'],
+                                  capture_output=True,
+                                  text=True,
+                                  timeout=5)
+            return result.returncode == 0
+        except:
+            return False
+
     def launch_game(self):
-        """Launch the game"""
+        """Launch the game (поддержка JAR и EXE файлов)"""
         selected_version = self.version_selector.get()
         version_path = os.path.join(GAME_PATH, selected_version)
 
-        # Look for executable
-        exe_file = None
-        if os.path.exists(version_path):
-            for file in os.listdir(version_path):
-                if file.endswith('.exe'):
-                    exe_file = os.path.join(version_path, file)
-                    break
-
-        if not exe_file or not os.path.exists(exe_file):
+        if not os.path.exists(version_path):
             messagebox.showwarning(
                 "Игра не найдена",
-                f"Исполняемый файл игры не найден в:\n{version_path}\n\n"
-                "Пожалуйста, скачайте игру сначала."
+                f"Игра не установлена.\n\nНажмите 'УСТАНОВИТЬ' чтобы загрузить игру."
             )
             return
 
+        # Ищем исполняемый файл (приоритет: JAR > EXE)
+        jar_file = None
+        exe_file = None
+
+        for file in os.listdir(version_path):
+            if file.endswith('.jar'):
+                jar_file = os.path.join(version_path, file)
+            elif file.endswith('.exe'):
+                exe_file = os.path.join(version_path, file)
+
         try:
-            # Launch game with allocated RAM
             self.status_label.configure(text="Запуск игры...", text_color="#00d4ff")
 
-            # For Java games, you might use:
-            # subprocess.Popen([exe_file, f"-Xmx{self.config['ram_allocated']}M"])
+            # Если есть JAR файл - запускаем через Java
+            if jar_file:
+                # Проверяем наличие Java
+                if not self.check_java_installed():
+                    messagebox.showerror(
+                        "Java не найдена",
+                        "Для запуска игры требуется Java!\n\n"
+                        "Скачайте и установите Java с:\n"
+                        "https://www.java.com/download\n\n"
+                        "После установки перезапустите лаунчер."
+                    )
+                    self.status_label.configure(text="Требуется Java", text_color="#ff0000")
+                    return
 
-            subprocess.Popen([exe_file])
+                # Запускаем JAR с выделенной RAM
+                ram_mb = self.config['ram_allocated']
+                subprocess.Popen([
+                    'java',
+                    f'-Xmx{ram_mb}M',
+                    f'-Xms{ram_mb // 2}M',  # Минимальная RAM = половина от максимальной
+                    '-jar',
+                    jar_file
+                ], cwd=version_path)  # Устанавливаем рабочую директорию
 
+                self.status_label.configure(text="Игра запущена!", text_color="#00ff00")
+
+            # Если нет JAR, но есть EXE - запускаем EXE
+            elif exe_file:
+                subprocess.Popen([exe_file], cwd=version_path)
+                self.status_label.configure(text="Игра запущена!", text_color="#00ff00")
+
+            else:
+                messagebox.showwarning(
+                    "Игра не найдена",
+                    f"Не найден исполняемый файл игры (.jar или .exe) в:\n{version_path}\n\n"
+                    "Переустановите игру, нажав 'УСТАНОВИТЬ'."
+                )
+                self.status_label.configure(text="Файл игры не найден", text_color="#ff0000")
+                return
+
+            # Сохраняем последнюю играную версию
             self.config["last_played"] = selected_version
             self.save_config()
 
-            self.status_label.configure(text="Игра запущена!", text_color="#00ff00")
-
         except Exception as e:
             self.status_label.configure(text="Ошибка запуска", text_color="#ff0000")
-            messagebox.showerror("Ошибка", f"Не удалось запустить игру:\n{e}")
+            messagebox.showerror("Ошибка", f"Не удалось запустить игру:\n\n{str(e)}")
 
     def on_closing(self):
         """Handle window closing"""
