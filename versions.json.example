@@ -1,22 +1,18 @@
 {
   "versions": [
     {
-      "name": "ALPHA 1.16.5",
-      "description": "Последняя стабильная версия",
-      "download_url": "",
-      "installed": false
+      "name": "Twix Game v1.0",
+      "description": "Основная версия игры Twix",
+      "download_url": "https://drive.google.com/file/d/1RF78ZZk6O0xGZ_LUx_LJ3OXaCxvjHMIR/view?usp=sharing",
+      "installed": false,
+      "comment": "Лаунчер автоматически конвертирует любую ссылку Google Drive в прямую ссылку для скачивания"
     },
     {
-      "name": "ALPHA 1.16.4",
-      "description": "Предыдущая версия",
+      "name": "ALPHA 1.16.4 (Пример)",
+      "description": "Пример дополнительной версии",
       "download_url": "",
-      "installed": false
-    },
-    {
-      "name": "ALPHA 1.16.3",
-      "description": "Старая версия",
-      "download_url": "",
-      "installed": false
+      "installed": false,
+      "comment": "Замените download_url на свою ссылку"
     }
   ]
 }

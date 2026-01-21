@@ -6,6 +6,8 @@ import requests
 import psutil
 import subprocess
 import threading
+import zipfile
+import re
 from pathlib import Path
 from tkinter import messagebox
 
@@ -13,6 +15,48 @@ from tkinter import messagebox
 GAME_PATH = "C:/Twix"
 CONFIG_FILE = os.path.join(GAME_PATH, "launcher_config.json")
 VERSIONS_FILE = os.path.join(GAME_PATH, "versions.json")
+
+
+def convert_google_drive_url(url):
+    """
+    Конвертирует обычную ссылку Google Drive в прямую ссылку для скачивания
+
+    Примеры:
+    https://drive.google.com/file/d/FILE_ID/view -> https://drive.google.com/uc?export=download&id=FILE_ID
+    https://drive.google.com/open?id=FILE_ID -> https://drive.google.com/uc?export=download&id=FILE_ID
+    """
+    if "drive.google.com" not in url:
+        return url
+
+    # Извлекаем ID файла из разных форматов ссылок
+    patterns = [
+        r'/file/d/([a-zA-Z0-9_-]+)',  # /file/d/FILE_ID/view
+        r'id=([a-zA-Z0-9_-]+)',        # ?id=FILE_ID
+        r'/d/([a-zA-Z0-9_-]+)'         # /d/FILE_ID
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            file_id = match.group(1)
+            return f"https://drive.google.com/uc?export=download&id={file_id}"
+
+    return url
+
+
+def extract_zip(zip_path, extract_to):
+    """
+    Извлекает содержимое zip-архива
+    Возвращает True при успехе, False при ошибке
+    """
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_to)
+        return True
+    except Exception as e:
+        print(f"Ошибка распаковки: {e}")
+        return False
+
 
 class TwixLauncher(ctk.CTk):
     def __init__(self):
@@ -350,37 +394,87 @@ class TwixLauncher(ctk.CTk):
 
     def _download_thread(self, version_data):
         """Download game in background thread"""
+        zip_file_path = None
         try:
+            # Конвертируем Google Drive ссылку в прямую ссылку
+            download_url = convert_google_drive_url(version_data["download_url"])
+
             self.status_label.configure(text="Скачивание...", text_color="#00d4ff")
 
             version_path = os.path.join(GAME_PATH, version_data["name"])
             os.makedirs(version_path, exist_ok=True)
 
-            # Download file
-            response = requests.get(version_data["download_url"], stream=True)
+            # Скачивание файла
+            self.status_label.configure(text="Загрузка игры...", text_color="#00d4ff")
+            response = requests.get(download_url, stream=True, allow_redirects=True)
+            response.raise_for_status()  # Проверка на ошибки HTTP
+
             total_size = int(response.headers.get('content-length', 0))
 
             downloaded = 0
             chunk_size = 8192
 
-            output_file = os.path.join(version_path, "game.zip")
+            zip_file_path = os.path.join(version_path, "game.zip")
 
-            with open(output_file, 'wb') as f:
+            # Скачивание с прогресс-баром
+            with open(zip_file_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=chunk_size):
                     if chunk:
                         f.write(chunk)
                         downloaded += len(chunk)
                         if total_size > 0:
-                            progress = downloaded / total_size
+                            progress = (downloaded / total_size) * 0.7  # 70% на скачивание
                             self.progress_bar.set(progress)
 
-            self.status_label.configure(text="Скачивание завершено!", text_color="#00ff00")
-            self.launch_button.configure(state="normal")
-            messagebox.showinfo("Успех", f"Версия {version_data['name']} успешно скачана!")
+            # Распаковка архива
+            self.status_label.configure(text="Распаковка файлов...", text_color="#00d4ff")
+            self.progress_bar.set(0.7)
+
+            if extract_zip(zip_file_path, version_path):
+                self.progress_bar.set(0.9)
+
+                # Удаление zip-файла после успешной распаковки
+                try:
+                    os.remove(zip_file_path)
+                    zip_file_path = None
+                except:
+                    pass
+
+                self.progress_bar.set(1.0)
+                self.status_label.configure(text="Установка завершена!", text_color="#00ff00")
+                self.launch_button.configure(state="normal")
+
+                # Обновляем статус установки в versions.json
+                for v in self.versions_data["versions"]:
+                    if v["name"] == version_data["name"]:
+                        v["installed"] = True
+                        break
+
+                # Сохраняем обновленный versions.json
+                try:
+                    with open(VERSIONS_FILE, 'w', encoding='utf-8') as f:
+                        json.dump(self.versions_data, f, indent=4, ensure_ascii=False)
+                except:
+                    pass
+
+                messagebox.showinfo("Успех", f"Игра {version_data['name']} успешно установлена!\n\nМожете нажать 'ЗАПУСТИТЬ'")
+            else:
+                raise Exception("Не удалось распаковать архив")
+
+        except requests.exceptions.RequestException as e:
+            self.status_label.configure(text="Ошибка загрузки", text_color="#ff0000")
+            messagebox.showerror("Ошибка", f"Не удалось скачать игру:\n\nПроверьте:\n- Интернет соединение\n- Правильность ссылки\n\nОшибка: {str(e)}")
 
         except Exception as e:
             self.status_label.configure(text=f"Ошибка: {str(e)}", text_color="#ff0000")
-            messagebox.showerror("Ошибка", f"Не удалось скачать игру:\n{e}")
+            messagebox.showerror("Ошибка", f"Не удалось установить игру:\n{e}")
+
+            # Очистка при ошибке
+            if zip_file_path and os.path.exists(zip_file_path):
+                try:
+                    os.remove(zip_file_path)
+                except:
+                    pass
 
         finally:
             self.download_button.configure(state="normal")
